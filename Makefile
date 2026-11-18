@@ -9,7 +9,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	mkdir -p bin
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ) -lreadline
 
 obj/%.o: src/%.c
 	mkdir -p obj

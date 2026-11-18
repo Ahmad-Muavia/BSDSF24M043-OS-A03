@@ -1,62 +1,71 @@
+
 #include "shell.h"
+#include <readline/readline.h>
 
+/* Read a command from the user */
 char* read_cmd(char* prompt, FILE* fp) {
+    if (fp == stdin) {
+        return readline(prompt);
+    }
+
     printf("%s", prompt);
-    char* cmdline = (char*) malloc(sizeof(char) * MAX_LEN);
-    int c, pos = 0;
 
-    while ((c = getc(fp)) != EOF) {
-        if (c == '\n') break;
-        cmdline[pos++] = c;
-    }
+    char* line = malloc(MAX_LEN);
 
-    if (c == EOF && pos == 0) {
-        free(cmdline);
-        return NULL; // Handle Ctrl+D
-    }
-    
-    cmdline[pos] = '\0';
-    return cmdline;
-}
-
-char** tokenize(char* cmdline) {
-    // Edge case: empty command line
-    if (cmdline == NULL || cmdline[0] == '\0' || cmdline[0] == '\n') {
+    if (line == NULL) {
+        perror("malloc");
         return NULL;
     }
 
-    char** arglist = (char**)malloc(sizeof(char*) * (MAXARGS + 1));
-    for (int i = 0; i < MAXARGS + 1; i++) {
-        arglist[i] = (char*)malloc(sizeof(char) * ARGLEN);
-        bzero(arglist[i], ARGLEN);
+    if (fgets(line, MAX_LEN, fp) == NULL) {
+        free(line);
+        return NULL;
     }
 
-    char* cp = cmdline;
-    char* start;
-    int len;
+    line[strcspn(line, "\n")] = '\0';
+
+    return line;
+}
+
+/* Split command into arguments */
+char** tokenize(char* cmdline) {
+    char** arglist = malloc(sizeof(char*) * (MAXARGS + 1));
+
+    if (arglist == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
     int argnum = 0;
+    char* token = strtok(cmdline, " \t\n");
 
-    while (*cp != '\0' && argnum < MAXARGS) {
-        while (*cp == ' ' || *cp == '\t') cp++; // Skip leading whitespace
-        
-        if (*cp == '\0') break; // Line was only whitespace
+    while (token != NULL && argnum < MAXARGS) {
+        arglist[argnum] = malloc(strlen(token) + 1);
 
-        start = cp;
-        len = 1;
-        while (*++cp != '\0' && !(*cp == ' ' || *cp == '\t')) {
-            len++;
+        if (arglist[argnum] == NULL) {
+            perror("malloc");
+
+            for (int i = 0; i < argnum; i++) {
+                free(arglist[i]);
+            }
+
+            free(arglist);
+            return NULL;
         }
-        strncpy(arglist[argnum], start, len);
-        arglist[argnum][len] = '\0';
+
+        strcpy(arglist[argnum], token);
         argnum++;
+
+        token = strtok(NULL, " \t\n");
     }
 
-    if (argnum == 0) { // No arguments were parsed
-        for(int i = 0; i < MAXARGS + 1; i++) free(arglist[i]);
+    arglist[argnum] = NULL;
+
+    if (argnum == 0) {
         free(arglist);
         return NULL;
     }
 
-    arglist[argnum] = NULL;
     return arglist;
 }
+

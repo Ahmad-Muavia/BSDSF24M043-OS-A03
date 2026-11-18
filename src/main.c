@@ -1,60 +1,64 @@
 
 #include "shell.h"
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #define HISTORY_SIZE 20
 
-char history_list[HISTORY_SIZE][MAX_LEN];
+char command_history[HISTORY_SIZE][MAX_LEN];
 int history_count = 0;
 int total_commands = 0;
 
-// Store a command in history
-void add_history(char* command) {
-
+/* Store a command in custom history */
+void store_history(char *command) {
     if (history_count == HISTORY_SIZE) {
-        // Remove the oldest command
-        memmove(history_list, history_list + 1,
-                sizeof(history_list[0]) * (HISTORY_SIZE - 1));
+        memmove(command_history,
+                command_history + 1,
+                sizeof(command_history[0]) * (HISTORY_SIZE - 1));
     } else {
         history_count++;
     }
 
-    snprintf(history_list[history_count - 1], MAX_LEN, "%s", command);
+    snprintf(command_history[history_count - 1],
+             MAX_LEN, "%s", command);
+
     total_commands++;
 }
 
-// Display stored commands
-void show_history() {
-
+/* Display custom history */
+void show_history(void) {
     int first_number = total_commands - history_count + 1;
 
     for (int i = 0; i < history_count; i++) {
-        printf("%d  %s\n", first_number + i, history_list[i]);
+        printf("%d  %s\n",
+               first_number + i,
+               command_history[i]);
     }
 }
 
-// Retrieve a command using its history number
-char* get_history(int number) {
-
+/* Retrieve command by history number */
+char *get_history(int number) {
     int first_number = total_commands - history_count + 1;
 
     if (number < first_number || number > total_commands) {
         return NULL;
     }
 
-    return history_list[number - first_number];
+    return command_history[number - first_number];
 }
 
-int main() {
+int main(void) {
+    char *cmdline;
+    char **arglist;
 
-    char* cmdline;
-    char** arglist;
+    using_history();
+    stifle_history(HISTORY_SIZE);
 
     while ((cmdline = read_cmd(PROMPT, stdin)) != NULL) {
 
-        // Handle !n command
+        /* Handle !n command */
         if (cmdline[0] == '!') {
-
-            char* end;
+            char *end;
             long number = strtol(cmdline + 1, &end, 10);
 
             if (cmdline[1] == '\0' || *end != '\0' || number <= 0) {
@@ -63,7 +67,7 @@ int main() {
                 continue;
             }
 
-            char* previous = get_history((int)number);
+            char *previous = get_history((int)number);
 
             if (previous == NULL) {
                 printf("History command not found.\n");
@@ -71,25 +75,32 @@ int main() {
                 continue;
             }
 
-            char temp[MAX_LEN];
-            snprintf(temp, MAX_LEN, "%s", previous);
-            snprintf(cmdline, MAX_LEN, "%s", temp);
+            char *expanded = strdup(previous);
+
+            if (expanded == NULL) {
+                perror("strdup");
+                free(cmdline);
+                continue;
+            }
+
+            free(cmdline);
+            cmdline = expanded;
 
             printf("%s\n", cmdline);
         }
 
-        if ((arglist = tokenize(cmdline)) != NULL) {
+        arglist = tokenize(cmdline);
 
+        if (arglist != NULL) {
+            store_history(cmdline);
             add_history(cmdline);
 
-            // Handle history built-in
             if (strcmp(arglist[0], "history") == 0) {
                 show_history();
             } else {
                 execute(arglist);
             }
 
-            // Free allocated argument memory
             for (int i = 0; arglist[i] != NULL; i++) {
                 free(arglist[i]);
             }
@@ -101,6 +112,8 @@ int main() {
     }
 
     printf("\nShell exited.\n");
+
+    clear_history();
+
     return 0;
 }
-
