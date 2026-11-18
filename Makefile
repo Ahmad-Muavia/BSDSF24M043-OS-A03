@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -Iinclude
 
 SRC = src/main.c src/shell.c src/execute.c
 OBJ = obj/main.o obj/shell.o obj/execute.o
-TARGET = bin/psh
+TARGET = bin/myshell
 
 all: $(TARGET)
 
@@ -16,6 +16,6 @@ obj/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f obj/*.o bin/psh
+	rm -f obj/*.o bin/myshell
 
 .PHONY: all clean
