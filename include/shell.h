@@ -1,3 +1,4 @@
+
 #ifndef SHELL_H
 #define SHELL_H
 
@@ -14,11 +15,10 @@
 #define ARGLEN 30
 #define PROMPT "FCIT> "
 
-// Function prototypes
 char* read_cmd(char* prompt, FILE* fp);
 char** tokenize(char* cmdline);
-int execute(char** arglist);
 
-#endif // SHELL_H
-int execute(char** arglist);
+int execute(char* arglist[]);
 int handle_builtin(char** arglist);
+
+#endif
