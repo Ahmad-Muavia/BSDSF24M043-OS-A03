@@ -95,6 +95,7 @@ int handle_builtin(char **arglist) {
         printf("cd - Change directory\n");
         printf("help - Display available commands\n");
         printf("jobs - Display background jobs\n");
+        printf("set - Display shell variables\n");
         return 0;
     }
 
@@ -106,7 +107,7 @@ int handle_builtin(char **arglist) {
     return -1;
 }
 
-/* Convert a child process status into a shell exit status */
+/* Convert child process status into shell exit status */
 static int get_exit_status(int status) {
     if (WIFEXITED(status)) {
         return WEXITSTATUS(status);
@@ -258,7 +259,8 @@ static int execute_pipeline(char **arglist, int background) {
 
             /* Output redirection */
             if (output_files[i] != NULL) {
-                int fd = open(output_files[i],
+                int fd = open(input_files[i] != NULL
+                              ? output_files[i] : output_files[i],
                               O_WRONLY | O_CREAT | O_TRUNC,
                               0644);
 
